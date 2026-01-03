@@ -1,8 +1,27 @@
 from flask import Flask, request, render_template_string
 import pickle
+import pandas as pd
+import matplotlib.pyplot as plt
+import io
+import base64
 
 app = Flask(__name__)
 model = pickle.load(open("model.pkl", "rb"))
+df = pd.read_csv("student_data.csv")
+
+def create_plot(x, y, xlabel, ylabel, title):
+    plt.figure()
+    plt.scatter(x, y)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    img = io.BytesIO()
+    plt.savefig(img, format="png", bbox_inches="tight")
+    plt.close()
+    img.seek(0)
+
+    return base64.b64encode(img.getvalue()).decode()
 
 html="""
 <!DOCTYPE html>
@@ -58,16 +77,33 @@ button {
 button:hover {
     background: #0056b3;
 }
+.modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            width: 300px;
+            margin: 150px auto;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+        }
 
-.result {
-    margin-top: 20px;
-    padding: 12px;
-    background: #e8f0fe;
-    text-align: center;
-    font-weight: bold;
-    border-radius: 5px;
-}
-
+        img {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -90,13 +126,32 @@ button:hover {
         <button type="submit">Predict Final Grade</button>
     </form>
 
-    {% if prediction is not none%}
-    <div class="result">
-        <strong>Predicted G3:</strong> {{ prediction }} <br>
-        <strong>Status:</strong> {{ status }} <br>
-        <strong>Performance:</strong> {{ level }}
-    </div>
-{% endif %}
+    {% if studytime_plot %}
+        <h3>Performance Insights</h3>
+        <img src="data:image/png;base64,{{ studytime_plot }}" width="400">
+        <img src="data:image/png;base64,{{ absences_plot }}" width="400">
+    {% endif %}
+</div>
+
+<div id="resultModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Prediction Result</h3>
+    <p><strong>Final Grade (G3):</strong> {{ prediction }}</p>
+    <p><strong>Status:</strong> {{ status }}</p>
+    <p><strong>Performance:</strong> {{ level }}</p>
+  </div>
+</div>
+
+<script>
+    function closeModal() {
+        document.getElementById("resultModal").style.display = "none";
+    }
+
+    {% if prediction is not none %}
+        document.getElementById("resultModal").style.display = "block";
+    {% endif %}
+</script>
 </body>
 </html>
 """
@@ -105,6 +160,8 @@ def home():
     prediction = None
     status = None
     level = None
+    studytime_plot=None
+    absences_plot=None
 
     if request.method == "POST":
         G1 = float(request.form["G1"])
@@ -126,6 +183,17 @@ def home():
         else:
             level = "Poor"
 
+        studytime_plot = create_plot(
+            df["studytime"], df["G3"],
+            "Study Time", "Final Grade (G3)",
+            "Study Time vs Final Grade"
+        )
+
+        absences_plot = create_plot(
+            df["absences"], df["G3"],
+            "Absences", "Final Grade (G3)",
+            "Absences vs Final Grade"
+        )
     return render_template_string(
         html,
         prediction=prediction,
