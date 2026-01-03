@@ -1,2 +1,3 @@
 # ML-project_1
-Doing ML projects so that i can improve my skills
+Its ML project that I'll do to improve my skills
+This is the first project 
