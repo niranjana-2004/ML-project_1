@@ -83,7 +83,7 @@ button:hover {
 </form>
 
 
-    {% if prediction %}
+    {% if prediction is not none%}
     <div class="result">
         <strong>Predicted G3:</strong> {{ prediction }} <br>
         <strong>Status:</strong> {{ status }} <br>

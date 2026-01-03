@@ -90,11 +90,17 @@ button:hover {
         <button type="submit">Predict Final Grade</button>
     </form>
 
-    <h3>{{ prediction_text }}</h3>
+    {% if prediction is not none%}
+    <div class="result">
+        <strong>Predicted G3:</strong> {{ prediction }} <br>
+        <strong>Status:</strong> {{ status }} <br>
+        <strong>Performance:</strong> {{ level }}
+    </div>
+{% endif %}
 </body>
 </html>
 """
-@app.route("/")
+@app.route("/", methods=["GET","POST"])
 def home():
     prediction = None
     status = None
