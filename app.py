@@ -73,7 +73,7 @@ button:hover {
 <body>
     <h2>Student Performance Prediction</h2>
 
-    <form action="/predict" method="post">
+    <form method="post">
 
         <label>G1 (First Period Grade):</label><br>
         <input type="number" name="G1" required><br><br>
@@ -97,6 +97,9 @@ button:hover {
 @app.route("/")
 def home():
     prediction = None
+    status = None
+    level = None
+
     if request.method == "POST":
         G1 = float(request.form["G1"])
         G2 = float(request.form["G2"])
@@ -106,7 +109,22 @@ def home():
         result = model.predict([[G1, G2, studytime, absences]])
         prediction = round(result[0], 2)
 
-    return render_template_string(html, prediction=prediction)
+        status = "Pass" if prediction >= 10 else "Fail"
 
+        if prediction >= 15:
+            level = "Excellent"
+        elif prediction >= 12:
+            level = "Good"
+        elif prediction >= 10:
+            level = "Average"
+        else:
+            level = "Poor"
+
+    return render_template_string(
+        html,
+        prediction=prediction,
+        status=status,
+        level=level
+    )
 if __name__ == "__main__":
     app.run(debug=True)

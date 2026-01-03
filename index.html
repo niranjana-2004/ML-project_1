@@ -66,23 +66,30 @@ button:hover {
 <body>
     <h2>Student Performance Prediction</h2>
 
-    <form action="/predict" method="post">
+    <form method="post">
+    <label>G1</label>
+    <input type="number" name="G1" min="0" max="20" required>
 
-        <label>G1 (First Period Grade):</label><br>
-        <input type="number" name="G1" required><br><br>
+    <label>G2</label>
+    <input type="number" name="G2" min="0" max="20" required>
 
-        <label>G2 (Second Period Grade):</label><br>
-        <input type="number" name="G2" required><br><br>
+    <label>Study Time</label>
+    <input type="number" step="0.1" name="studytime" required>
 
-        <label>Study Time:</label><br>
-        <input type="number" step="0.1" name="studytime" required><br><br>
+    <label>Absences</label>
+    <input type="number" min="0" required name="absences">
 
-        <label>Absences:</label><br>
-        <input type="number" name="absences" required><br><br>
+    <button type="submit">Predict</button>
+</form>
 
-        <button type="submit">Predict Final Grade</button>
-    </form>
 
-    <h3>{{ prediction_text }}</h3>
+    {% if prediction %}
+    <div class="result">
+        <strong>Predicted G3:</strong> {{ prediction }} <br>
+        <strong>Status:</strong> {{ status }} <br>
+        <strong>Performance:</strong> {{ level }}
+    </div>
+{% endif %}
+
 </body>
 </html>
