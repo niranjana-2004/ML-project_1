@@ -2,26 +2,32 @@ from flask import Flask, request, render_template_string
 import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 import io
 import base64
 
+matplotlib.use("Agg")
 app = Flask(__name__)
 model = pickle.load(open("model.pkl", "rb"))
 df = pd.read_csv("student_data.csv")
+avg_studytime = round(df["studytime"].mean(), 2)
+avg_grade = round(df["G3"].mean(), 2)
+corr_study_grade = round(df["studytime"].corr(df["G3"]), 2)
+
 
 def create_plot(x, y, xlabel, ylabel, title):
-    plt.figure()
-    plt.scatter(x, y)
+    plt.figure(figsize=(4,3))
+    plt.scatter(x, y, alpha=0.6)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
 
-    img = io.BytesIO()
-    plt.savefig(img, format="png", bbox_inches="tight")
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
     plt.close()
-    img.seek(0)
+    buf.seek(0)
 
-    return base64.b64encode(img.getvalue()).decode()
+    return base64.b64encode(buf.read()).decode("utf-8")
 
 html="""
 <!DOCTYPE html>
@@ -126,11 +132,18 @@ button:hover {
         <button type="submit">Predict Final Grade</button>
     </form>
 
-    {% if studytime_plot %}
-        <h3>Performance Insights</h3>
-        <img src="data:image/png;base64,{{ studytime_plot }}" width="400">
-        <img src="data:image/png;base64,{{ absences_plot }}" width="400">
-    {% endif %}
+    <h3>📊 Study & Performance Statistics</h3>
+
+<ul>
+  <li><strong>Average Study Time:</strong> {{ avg_studytime }} hours</li>
+  <li><strong>Average Final Grade (G3):</strong> {{ avg_grade }}</li>
+  <li><strong>Correlation (Study Time vs Grade):</strong> {{ corr_study_grade }}</li>
+</ul>
+
+{% if study_plot %}
+  <h3>📈 Study Time vs Final Grade</h3>
+  <img src="data:image/png;base64,{{ study_plot }}" width="400">
+{% endif %}
 </div>
 
 <div id="resultModal" class="modal">
@@ -157,6 +170,7 @@ button:hover {
 """
 @app.route("/", methods=["GET","POST"])
 def home():
+    study_plot=None
     prediction = None
     status = None
     level = None
@@ -183,9 +197,9 @@ def home():
         else:
             level = "Poor"
 
-        studytime_plot = create_plot(
+        study_plot = create_plot(
             df["studytime"], df["G3"],
-            "Study Time", "Final Grade (G3)",
+            "Study Time", "Final Grade",
             "Study Time vs Final Grade"
         )
 
@@ -195,10 +209,14 @@ def home():
             "Absences vs Final Grade"
         )
     return render_template_string(
-        html,
-        prediction=prediction,
-        status=status,
-        level=level
+    html,
+    prediction=prediction,
+    status=status,
+    level=level,
+    study_plot=study_plot,
+    avg_studytime=avg_studytime,
+    avg_grade=avg_grade,
+    corr_study_grade=corr_study_grade
     )
 if __name__ == "__main__":
     app.run(debug=True)
